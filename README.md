@@ -22,6 +22,18 @@
 
 > 이 저장소의 모든 데이터(매뉴얼, 에러코드, 서비스 이력)는 **가상**입니다. 앱의 모든 화면에도 “모든 데이터는 가상”이 표시됩니다.
 
+## 포트폴리오 요약: 정혜윤
+
+물류 설비 장애 신고를 셀프 가이드 또는 엔지니어 RAG 대화로 처리하는 팀 프로젝트(7명)에서 **답변 생성 · 프롬프트 설계 · UX/UI 개선**을 맡았습니다.
+
+**기술 스택**: Python 3.12, LangChain, Pydantic, OpenAI API, Gradio(CSS), pytest
+
+- **답변 생성** (`generator.py`): 구조화 출력(`Answer`)과 인용 검증으로, 출처가 근거와 설비에 일치할 때만 답변을 보여 줌. 테스트 23개
+- **프롬프트 설계** (`prompts.py`): 근거 밖 답변 금지, 고객 안내는 매뉴얼 근거만, 근거 부족 시 보류하도록 규칙화
+- **UX/UI 개선** (`mpilot/ui/`): [원문보기] 모달로 근거를 바로 확인, 역할별 화면과 채팅 화면 다듬기
+
+**팀 결과**(가상 데이터 기준): Recall 0.88 → 0.94, 정답 71/80, 고객 안내 환각 20/20 → 0/20
+
 <img src="images/h_team.svg" alt="우리 팀은요" width="100%">
 
 ## 설비 장애 대응 지원, 근거 있는 첫 대응
@@ -116,74 +128,7 @@ flowchart TD
 
 상세 진입 시 AI 요약, 조치 결과 AI 초안, 작성 글의 이력 형식 구조화, 사진 첨부·열람
 
-<img src="images/h_structure.svg" alt="시스템 구조" width="100%">
-
-## 시스템 구조
-
-```text
-.
-├── app.py                  # [UI] 앱 조립·실행 공통부
-├── app_customer.py         # [UI] 고객 앱 진입점 (7860)
-├── app_engineer.py         # [UI] 엔지니어 앱 진입점 (7861)
-├── mpilot/
-│   ├── config.py           # [공통] 앱 설정 로드·검증
-│   ├── models.py           # [공통] 업무 데이터 정의와 순수 업무 규칙
-│   ├── service.py          # [UI] 화면과 DB·RAG를 잇는 유즈케이스(접수·질문·완료)
-│   ├── db/                 # [DB]
-│   │   ├── parser/         #   매뉴얼 PDF를 출처가 붙은 검색 단위로 분해(types·text·tables·chunks·cache·ocr)
-│   │   ├── schemas.py      #   관계형 DB 구조·연결 설정
-│   │   ├── rdb/            #   신고·대화·조치의 저장·조회
-│   │   │   ├── __init__.py #   공개 함수를 다시 내보낸다(밖에서는 rdb.<함수>로 부른다)
-│   │   │   ├── _common.py  #   공통 도구: 엔진 보관, 시각·JSON 변환, 행 → 업무 객체
-│   │   │   ├── setup.py    #   연결·테이블 생성, 에러코드·시드 이력 적재, 에러코드 조회
-│   │   │   ├── cases.py    #   신고 저장(셀프 가이드·지원 요청), 목록·상세 조회
-│   │   │   └── chat.py     #   대화 저장·조회, 조치 확정, 확정 이력 조회
-│   │   └── vectordb.py     #   검색 자료 저장소 관리(색인·이력 반영·원문 조회)
-│   ├── rag/                # [RAG]
-│   │   ├── retriever.py    #   근거 검색
-│   │   ├── generator.py    #   모델 호출과 답변 형식·인용 검증
-│   │   └── pipeline.py     #   고객 안내·엔지니어 답변의 단계 조립
-│   └── ui/                 # [UI] 고객 신고 목록·작성·상세, 엔지니어 대시보드·대화·조치 저장
-├── fake/                   # [UI] 수동 테스트·시연용 가짜 구현 (사용법·재현 절차는 fake/README.md)
-│   ├── fake_service.py     #   --fake 실행용 가짜 service(원자료 CSV + 메모리)
-│   ├── fake_db.py          #   가짜 rdb·vectordb·parser(메모리 + 진짜 Chroma). service·rag는 진짜 코드로 돈다
-│   ├── run.py              #   가짜 DB 위에서 고객·엔지니어 앱 실행 (python -m fake.run)
-│   └── test_*.py           #   위 가짜들과 실행 진입점의 테스트
-├── scripts/
-│   ├── init_db.py          # [DB] DB 초기화·초기 자료 적재
-│   ├── build_error_codes.py   # [DB] 에러코드 정본 data/errorcodes.csv 생성
-│   ├── build_history_seed.py  # [DB] 시드 이력 data/history_seed.csv 생성
-│   └── evaluate.py         # [RAG] RAG 품질 평가 실행·기록
-├── prompts/                # [RAG] 모델 지시문(고객 안내·엔지니어 대화)
-├── tests/                  # 테스트
-├── pytest.ini              # 테스트 표시(db·pdf) 설정
-├── .github/workflows/      # GitHub CI
-├── data/
-│   ├── manuals/            # 설비 매뉴얼 PDF 4종(원자료)
-│   ├── raw/                # 에러코드 표, 설비별 조치 이력 더미 CSV(원자료)
-│   ├── photos/             # 설비 사진 4장
-│   ├── cache/              # 매뉴얼 청크 캐시(로컬 전용, 지우면 다시 만든다)
-│   └── eval_questions.csv  # RAG 평가 문항
-└── docs/                   # 기획 의도(intent.md)·명세(spec.md)·실행 가이드(RUN.md)
-```
-
-**의존 방향**은 한쪽으로만 흐릅니다: `app*.py` → `ui/*`·`service` → `db/*`·`rag/pipeline` → `rag/retriever`·`rag/generator` → `models`. `rag`는 `db/rdb`를 부르지 않고, 저장은 `service`가 맡습니다.
-
-### 검색 자료(Chroma)
-
-| 자료 | 컬렉션 | 문서 ID |
-|---|---|---|
-| 에러코드 표 행 | `manual` | `error:<equipment>:<code>` |
-| 매뉴얼 본문 | `manual` | `manual:<manual_id>:<page>:<chunk_no>` |
-| 확정 현장 조치 | `history` | `history:<case_id>` |
-
-- 검색은 **신고 설비 필터가 기본**입니다. 질문에 다른 설비를 말해도 먼저 신고한 설비의 자료에서 근거를 찾습니다.
-- 근거로 답할 수 있는지는 검색 거리 기준값이 아니라 **모델이 판정**합니다.
-- 엔지니어 답변에서 신고 설비 자료로 근거가 부족하면, 설비 필터 없이 4종 전체를 질문 원문으로 **한 번 더 검색**합니다(폴백). 이때 다른 설비의 인용을 허용하고 답변에 그 사실을 안내합니다. 고객 안내에는 폴백이 없습니다.
-- 고객 안내는 신고 코드의 `manual`만 **검색**해 근거로 쓰고(근거가 부족하면 보류), `history`는 엔지니어 대화에서만 검색합니다.
-- 근거가 없으면 `steps=[]`인 보류 답변을 돌려주고, 모델·검색 장애와 검증 실패는 `DependencyError`로 올립니다.
-
-### 데이터 출처와 이용 조건
+## 데이터 출처와 이용 조건
 
 설비 사진을 뺀 데이터(매뉴얼, 에러코드, 이력, 평가 문항)는 **모두 가상**이며, 실제 현장이나 고객사의 자료가 아닙니다.
 
